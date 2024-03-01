@@ -16,23 +16,21 @@ void get_URL(const string &host, const string &path) {
      * */
 
     // Create message with given format
-    const string request_message = "GET " + path + " HTTP/1.1\r\n" +
-                                   "HOST: " + host + "\r\n" +
-                                   "Connection: close\r\n" +
-                                   "\r\n";
+    const string request_message =
+        "GET " + path + " HTTP/1.1\r\n" + "HOST: " + host + "\r\n" + "Connection: close\r\n" + "\r\n";
 
     // Initialize TCP socket
     TCPSocket socket;
     socket.connect(Address(host, "http"));
 
-    socket.write(request_message); // Write message to request
-    
-    // Print all response message
-    while(!socket.eof())
-	cout << socket.read();
+    socket.write(request_message);  // Write message to request
 
-    socket.close(); // Close socket
-    
+    // Print all response message
+    while (!socket.eof())
+        cout << socket.read();
+
+    socket.close();  // Close socket
+
     return;
 }
 

@@ -10,7 +10,6 @@
 //! and then no more bytes can be written.
 class ByteStream {
   private:
-    
     // Buffer (using string as a byte-array)
     std::string buffer;
 
