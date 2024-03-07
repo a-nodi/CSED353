@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <string>
+#include <queue>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
@@ -14,6 +15,25 @@ class StreamReassembler {
 
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
+    unsigned int _unassembled_bytes;
+    
+    struct Substring {
+      Substring(std::string _data, int _index, bool _eof): data(_data), start(_index), end(_index + _data.length()), length(_data.length()), eof(_eof) {}
+      std::string data;
+      int start, end, length;
+      bool eof;
+    };
+	  
+    struct compare {
+      bool operator()(const Substring &a, const Substring &b) {
+        return a.start > b.start;
+      }
+    };
+    
+    bool is_eof;
+    
+    std::priority_queue<Substring, std::vector<Substring>, compare> aux_storage;
+
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
