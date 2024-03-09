@@ -12,56 +12,55 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 
 using namespace std;
 
-StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity), _capacity(capacity), _unassembled_bytes(0), is_eof(false), aux_storage(compare()) {}
+StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity), 
+                                                              _capacity(capacity), 
+                                                              _unassembled_bytes(0), 
+                                                              _unassembled_start(0),
+                                                              aux_storage() {}
 
 //! \details This function accepts a substring (aka a segment) of bytes,
 //! possibly out-of-order, from the logical stream, and assembles any newly
 //! contiguous substrings and writes them into the output stream in order.
 void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
-    /*
-    
-    
-    
-    
-    */    
+    Substring input = Substring(data, index, eof);
 
-    bool is_concatenable = true;
-    _unassembled_bytes += data.length();
-    aux_storage.push(Substring(data, index, eof)); // Contain the substring in to auxilary storage and sort using the index
-    
-    do {
-        Substring current = aux_storage.top();
+    if (input.start == input.end) {
+        if (eof) 
+            _output.end_input();
+        
+        return;
+    }
 
-        if (int(_output.bytes_written()) < current.start) {
-            is_concatenable = false;
+    for (size_t i = input.start; i < input.end; i++) {
+        if (i < _unassembled_start) 
             continue;
-        }
         
-        aux_storage.pop();
-        
-        if (int(_output.bytes_written()) <= current.end){            
-            _output.write(current.data.substr(max(int(_output.bytes_written() - current.start), 0), current.length));
-        } 
+        if (i >= _unassembled_start + _capacity) 
+            break;
 
-        _unassembled_bytes -= current.length;
-
-        if (current.eof) {
-            // is_eof = true;
-            if (int(_capacity) >= current.end)_output.end_input();
-            is_concatenable = false;
+        if (aux_storage.find(i) == aux_storage.end() && i < _capacity + _output.bytes_read()) {
+            aux_storage[i] = make_pair(data.substr(i - input.start, 1), (i == input.end - 1 && eof));
+            
+            _unassembled_bytes++;
         }
 
-        if (aux_storage.empty()) 
-            is_concatenable = false;
+    }
+
+    while (aux_storage.find(_unassembled_start) != aux_storage.end()) {
+        _output.write(aux_storage[_unassembled_start].first);
+        if (aux_storage[_unassembled_start].second) 
+            _output.end_input();
         
+        aux_storage.erase(_unassembled_start);
+        _unassembled_start++;
+        _unassembled_bytes--;
 
-    } while(is_concatenable); 
-    
-    
-
+    }
 
     return;
 }
+
+
 
 size_t StreamReassembler::unassembled_bytes() const { return _unassembled_bytes; }
 
