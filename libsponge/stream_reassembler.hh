@@ -4,10 +4,8 @@
 #include "byte_stream.hh"
 
 #include <cstdint>
-#include <queue>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
