@@ -1,5 +1,5 @@
 #include "stream_reassembler.hh"
-#include <iostream>  // TODO: remove this line
+
 // Dummy implementation of a stream reassembler.
 
 // For Lab 1, please replace with a real implementation that passes the
@@ -56,13 +56,12 @@ void StreamReassembler::push_substring(const string& data, const size_t index, c
         if (i >= _unassembled_start + _capacity) 
             break;
 
-        // Case 3: Current byte is not reassembled
+        // Case 3: Current byte can be reassembled
         if (aux_storage.find(i) == aux_storage.end() && i < _capacity + _output.bytes_read()) {
             aux_storage[i] = make_pair(data.substr(i - input.start, 1), (i == input.end - 1 && eof)); // Store the byte (one byte and eof) in the aux_storage
 
             _unassembled_bytes++;
         }
-
     }
 
     // Reassemble the substrings in the aux_storage
