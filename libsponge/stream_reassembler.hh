@@ -23,12 +23,15 @@ class StreamReassembler {
 
     std::unordered_map<size_t, std::pair<std::string, bool>> aux_storage;  //!< The storage for the substrings stored but not yet reassembled
 
-    struct Substring{
-      std::string data;
-      size_t start, end;
-      bool eof;
-      Substring(const std::string &_data, const size_t index, const bool _eof) : data(_data), start(index), end(index + _data.length()), eof(_eof) { }
-    };    
+    struct Substring{    //!< A substring of the original byte stream
+      std::string data;  //!< The substring 
+      size_t start, end; //!< The indexs (place in sequence) of the first byte and last byte in `data`
+      bool eof;          //!< The last byte of `data` will be the last byte in the entire stream
+      Substring(const std::string& _data, const size_t index, const bool _eof) : data(_data), 
+                                                                                 start(index), 
+                                                                                 end(index + _data.length()), 
+                                                                                 eof(_eof) { }
+    }; 
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
