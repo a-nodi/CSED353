@@ -14,7 +14,7 @@ Program Structure and Design of the StreamReassembler:
  First, the program checks the current substring is eof. If so, it marks the eof index  
  Second, the program checks the early termination conditions.  
  third, store the each byte of substring into aux storage.
- forth, calculate the length of assembable substrings
+ forth, calculate the length of assemblable substrings
  fitfh, update the aux storage and related parameters
  sixth, mark eof if the eof byte has entered the output stream
  ]

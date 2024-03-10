@@ -76,10 +76,10 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         _output.write(aux_storage.substr(0, assemblable_length));  // Write the assemblable substring into the output
         _unassembled_start += assemblable_length;                  // Update the start of the unassembled substring
         _unassembled_bytes -= assemblable_length;                  // Update the number of unassembled bytes
-        aux_storage = aux_storage.substr(assemblable_length);
-        aux_storage += string(assemblable_length, 0);        // Update the auxiliary storage
-        occupied = occupied.substr(assemblable_length);      // Update the occupied status
-        occupied += string(assemblable_length, UNOCCUPIED);  // Update the occupied status
+        aux_storage = aux_storage.substr(assemblable_length);      // Subtract out the auxiliary storage
+        aux_storage += string(assemblable_length, 0);              // Fill in auxiliary storage
+        occupied = occupied.substr(assemblable_length);            // Subtract out the occupied status
+        occupied += string(assemblable_length, UNOCCUPIED);        // Fill in the occupied status
     }
 
     // If the end of the file is reached, mark output stream as eof
