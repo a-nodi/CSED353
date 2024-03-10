@@ -18,9 +18,9 @@ class StreamReassembler {
 
     size_t _unassembled_bytes;  //!< The number of bytes in the substrings stored but not yet reassembled
     size_t _unassembled_start;  //!< The index of the first byte in the substrings stored but not yet reassembled
-
-    std::unordered_map<size_t, std::pair<std::string, bool>>
-        aux_storage;  //!< The storage for the substrings stored but not yet reassembled
+    size_t eof_index;
+    std::string aux_storage;  //!< The storage for the substrings stored but not yet reassembled
+    std::string occupied;     //!< The storage for the marking that substrings have been stored in aux_storage
 
     struct Substring {      //!< A substring of the original byte stream
         std::string data;   //!< The substring

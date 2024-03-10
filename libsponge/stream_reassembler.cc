@@ -6,14 +6,16 @@
 // automated checks run by `make check_lab1`.
 
 // You will need to add private members to the class declaration in `stream_reassembler.hh`
-
-template <typename... Targs>
-void DUMMY_CODE(Targs &&.../* unused */) {}
-
 using namespace std;
 
 StreamReassembler::StreamReassembler(const size_t capacity)
-    : _output(capacity), _capacity(capacity), _unassembled_bytes(0), _unassembled_start(0), aux_storage() {}
+    : _output(capacity)
+    , _capacity(capacity)
+    , _unassembled_bytes(0)
+    , _unassembled_start(0)
+    , eof_index(uint64_t(-1))
+    , aux_storage(capacity, 0)
+    , occupied(capacity, 0) {}
 
 //! \details This function accepts a substring (aka a segment) of bytes,
 //! possibly out-of-order, from the logical stream, and assembles any newly
@@ -30,55 +32,50 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
      * return:
      *     void
      */
+    const int UNOCCUPIED = 0;
+    const int OCCUPIED = 1;
 
     // Make a substring of the input data
     Substring input = Substring(data, index, eof);
+    size_t assemblable_length = 0;  // The length of the assemblable substring
 
-    // If the input is empty, early termination
-    if (input.start == input.end) {
-        if (eof)  // If the input is empty and the end of the file is reached, end the input
-            _output.end_input();
+    // save eof index if the substring contains eof
+    if (eof)
+        eof_index = input.end;
 
+    // If the output stream is full, early termination
+    if (_output.remaining_capacity() == 0)  // If the output stream is full, early termination
         return;
-    }
 
-    // Allocate the input substring to the aux_storage to be reassembled
-    for (size_t i = input.start; i < input.end; i++) {
-        // Case 1: Current byte is already reassembled
-        if (i < _unassembled_start)
+    for (size_t i = max(input.start, _unassembled_start);
+         i < min(_unassembled_start + _output.remaining_capacity(), input.end);
+         i++) {
+        if (occupied[i - _unassembled_start] == OCCUPIED)  // If the byte has been pushed more than once, skip it
             continue;
 
-        // Case 2: Current byte is out of the capacity
-        if (i >= _unassembled_start + _capacity)
+        aux_storage[i - _unassembled_start] = input.data[i - input.start];  // Store the byte
+        occupied[i - _unassembled_start] = OCCUPIED;                        // Mark the byte as occupied
+        _unassembled_bytes++;                                               // Increase the number of unassembled bytes
+    }
+
+    for (size_t i = _unassembled_start; i < _unassembled_start + _output.remaining_capacity(); i++) {
+        if (occupied[i - _unassembled_start] == UNOCCUPIED)
             break;
-
-        // Case 3: Current byte can be reassembled
-        if (aux_storage.find(i) == aux_storage.end() && i < _capacity + _output.bytes_read()) {
-            aux_storage[i] =
-                make_pair(data.substr(i - input.start, 1),
-                          (i == input.end - 1 && eof));  // Store the byte (one byte and eof) in the aux_storage
-
-            _unassembled_bytes++;
-        }
+        assemblable_length++;
     }
 
-    // Reassemble the substrings in the aux_storage
-    while (aux_storage.find(_unassembled_start) != aux_storage.end()) {
-        // Write the reassembled byte to the output stream if it can be reassembled
-        _output.write(aux_storage[_unassembled_start].first);
-
-        // Check if the reassembled byte is the last byte of the file
-        if (aux_storage[_unassembled_start].second)
-            _output.end_input();
-
-        // Remove the reassembled byte from the aux_storage
-        aux_storage.erase(_unassembled_start);
-
-        _unassembled_start++;
-        _unassembled_bytes--;
+    if (assemblable_length > 0) {
+        _output.write(aux_storage.substr(0, assemblable_length));  // Write the assemblable substring into the output
+        _unassembled_start += assemblable_length;                  // Update the start of the unassembled substring
+        _unassembled_bytes -= assemblable_length;                  // Update the number of unassembled bytes
+        aux_storage = aux_storage.substr(assemblable_length);
+        aux_storage += string(assemblable_length, 0);        // Update the auxiliary storage
+        occupied = occupied.substr(assemblable_length);      // Update the occupied status
+        occupied += string(assemblable_length, UNOCCUPIED);  // Update the occupied status
     }
 
-    return;
+    if (eof_index != uint64_t(-1) && _unassembled_start == eof_index)  // If the end of the file is reached
+        _output.end_input();
 }
 
 size_t StreamReassembler::unassembled_bytes() const { return _unassembled_bytes; }
