@@ -35,11 +35,12 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     const int UNOCCUPIED = 0;
     const int OCCUPIED = 1;
 
-    // Make a substring of the input data
-    Substring input = Substring(data, index, eof);
     size_t assemblable_length = 0;  // The length of the assemblable substring
 
-    // save eof index if the substring contains eof
+    // Make a substring of the input data
+    Substring input = Substring(data, index, eof);
+
+    // Save eof index if the substring contains eof
     if (eof)
         eof_index = input.end;
 
@@ -47,6 +48,11 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     if (_output.remaining_capacity() == 0)  // If the output stream is full, early termination
         return;
 
+    // If the substring is out of the capacity, early termination
+    if (input.start >= _unassembled_start + _output.remaining_capacity())
+        return;
+
+    // Store the substring into aux_storage
     for (size_t i = max(input.start, _unassembled_start);
          i < min(_unassembled_start + _output.remaining_capacity(), input.end);
          i++) {
@@ -58,12 +64,14 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         _unassembled_bytes++;                                               // Increase the number of unassembled bytes
     }
 
+    // Find the length of the assemblable substring
     for (size_t i = _unassembled_start; i < _unassembled_start + _output.remaining_capacity(); i++) {
         if (occupied[i - _unassembled_start] == UNOCCUPIED)
             break;
         assemblable_length++;
     }
 
+    // If available, Write the assemblable substring into the output
     if (assemblable_length > 0) {
         _output.write(aux_storage.substr(0, assemblable_length));  // Write the assemblable substring into the output
         _unassembled_start += assemblable_length;                  // Update the start of the unassembled substring
@@ -74,7 +82,8 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         occupied += string(assemblable_length, UNOCCUPIED);  // Update the occupied status
     }
 
-    if (eof_index != uint64_t(-1) && _unassembled_start == eof_index)  // If the end of the file is reached
+    // If the end of the file is reached, mark output stream as eof
+    if (eof_index != uint64_t(-1) && _unassembled_start == eof_index)
         _output.end_input();
 }
 
