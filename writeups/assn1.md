@@ -28,6 +28,7 @@ Implementation Challenges:
  I found that in my VM, my code gives timeout for some heavy tests.  
  I didn't noticed that because i tested my code in my linux machine, not VM
  I had to changed my aux storage from unordered map to string.  
+ Maybe it is because of hash collision. In "many" and "win" test, there is a probability that hash collision can occur. 
  ]  
 
 Remaining Bugs:
