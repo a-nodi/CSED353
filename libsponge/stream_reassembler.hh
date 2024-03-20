@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
@@ -14,6 +15,20 @@ class StreamReassembler {
 
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
+
+    size_t _unassembled_bytes;  //!< The number of bytes in the substrings stored but not yet reassembled
+    size_t _unassembled_start;  //!< The index of the first byte in the substrings stored but not yet reassembled
+    size_t eof_index;           //!< The index of the eof byte in the entire stream
+    std::string aux_storage;    //!< The storage for the substrings stored but not yet reassembled
+    std::string occupied;       //!< The storage for the marking that substrings have been stored in aux_storage
+
+    struct Substring {      //!< A substring of the original byte stream
+        std::string data;   //!< The substring
+        size_t start, end;  //!< The indexs (place in sequence) of the first byte and last byte in `data`
+        bool eof;           //!< The last byte of `data` will be the last byte in the entire stream
+        Substring(const std::string &_data, const size_t index, const bool _eof)
+            : data(_data), start(index), end(index + _data.length()), eof(_eof) {}
+    };
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
