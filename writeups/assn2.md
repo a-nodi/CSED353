@@ -17,7 +17,6 @@ Program Structure and Design of the TCPReceiver and wrap/unwrap routines:
 [I designed TCPReceiver to receive segment and calculate the absolute sequence number of packet, and store it into stream reassembler if the syn packet has been received before handling the current packet. To calculate the absolute sequence number using relative stream index, I designed unwrapping function to convert the relative stream index to absolute sequence number, refurring to the assignment2 description pdf.  
 
 Also I implemented the function that calculates the ackno. i used isn, stream index and syn/fin indicating variables to calculate the ackno.
-
 ]
 
 Implementation Challenges:
