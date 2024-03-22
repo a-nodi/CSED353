@@ -1,7 +1,5 @@
 #include "wrapping_integers.hh"
 
-#include <iostream>
-
 // For Lab 2, please replace with a real implementation that passes the
 // automated checks run by `make check_lab2`.
 
