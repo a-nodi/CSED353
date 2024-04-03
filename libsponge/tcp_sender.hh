@@ -8,8 +8,36 @@
 
 #include <functional>
 #include <queue>
+#include <vector>
 
 //! \brief The "sender" part of a TCP implementation.
+
+class RetransmissionTimer {
+  private:
+    unsigned int _initial_retransmission_timeout;
+    unsigned int _retransmission_timeout;
+    unsigned int _retransmission_time{0};
+    unsigned int _consecutive_retransmissions{0};
+    bool _is_expired{false};
+    bool _is_running{false};
+
+  public:
+    RetransmissionTimer(const unsigned int retransmission_timeout);
+
+    void tick(const size_t ms_since_last_tick);
+
+    void exponential_backoff();
+
+    void start();
+
+    void stop();
+
+    bool is_running() const { return _is_running; }
+
+    bool is_expired() const { return _is_expired; }
+
+    unsigned int consecutive_retransmissions() const { return _consecutive_retransmissions; }
+};
 
 //! Accepts a ByteStream, divides it up into segments and sends the
 //! segments, keeps track of which segments are still in-flight,
@@ -31,6 +59,28 @@ class TCPSender {
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+
+    uint64_t _last_ackno{0};
+
+    RetransmissionTimer _retransmission_timer;
+
+    size_t _receiver_window_size{1};
+
+    uint64_t _bytes_in_flight{0};
+
+    bool have_sent_syn{false};
+    bool is_fin{false};
+
+    struct cmp {
+        bool operator()(const std::pair<uint64_t, TCPSegment> &a, const std::pair<uint64_t, TCPSegment> &b) {
+            return a.first > b.first;
+        }
+    };
+
+    std::priority_queue<std::pair<uint64_t, TCPSegment>, std::vector<std::pair<uint64_t, TCPSegment>>, cmp>
+        _segments_outstanding{};
+
+    void send_segment(TCPSegment &segment, uint64_t next_seqno, bool is_empty = false);
 
   public:
     //! Initialize a TCPSender
