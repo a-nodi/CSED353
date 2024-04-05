@@ -12,31 +12,60 @@
 
 //! \brief The "sender" part of a TCP implementation.
 
+//! A RetransmissionTimer is used to manage the retransmission timeout
 class RetransmissionTimer {
   private:
+    //! The initial retransmission timeout
     unsigned int _initial_retransmission_timeout;
+
+    //! The current retransmission timeout
     unsigned int _retransmission_timeout;
+
+    //! The current retransmission time
     unsigned int _retransmission_time{0};
+
+    //! The number of consecutive retransmissions
     unsigned int _consecutive_retransmissions{0};
+
+    //! The expired state of RetransmissionTimer
     bool _is_expired{false};
+
+    //! The running state of RetransmissionTimer
     bool _is_running{false};
 
   public:
+    //! Initialize a RetransmissionTimer
     RetransmissionTimer(const unsigned int retransmission_timeout);
 
+    //! \brief Notifies the RetransmissionTimer of the passage of time
     void tick(const size_t ms_since_last_tick);
 
-    void exponential_backoff();
+    //! \brief Perform exponential backoff for retransmission timeout
+    void exponential_backoff() { _retransmission_timeout *= 2; };
 
+    //! \brief Start the RetransmissionTimer
     void start();
 
+    //! \brief Stop the RetransmissionTimer
     void stop();
 
+    //! \brief Return the RetransmissionTimer is running
     bool is_running() const { return _is_running; }
 
+    //! \brief Return the RetransmissionTimer has expired
     bool is_expired() const { return _is_expired; }
 
+    //! \brief Return the consecutive retransmissions count
     unsigned int consecutive_retransmissions() const { return _consecutive_retransmissions; }
+
+    //! \brief Reset the retransmission time
+    void reset_time() { _retransmission_time = 0; }
+
+    //! \brief Reset the expired state of RetransmissionTimer
+    void reset_is_expired() { _is_expired = false; }
+
+    //! \brief Reset the consecutive retransmissions count
+    void reset_consecutive_retransmissions() { _consecutive_retransmissions = 0; }
 };
 
 //! Accepts a ByteStream, divides it up into segments and sends the
@@ -60,26 +89,42 @@ class TCPSender {
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
 
+    //! the last ackno received
     uint64_t _last_ackno{0};
 
-    RetransmissionTimer _retransmission_timer;
+    //! the last window size received
+    uint16_t _receiver_window_size{1};
 
-    size_t _receiver_window_size{1};
-
+    //! the number of bytes outstanding
     uint64_t _bytes_in_flight{0};
 
+    //! SYN flag
     bool have_sent_syn{false};
-    bool is_fin{false};
 
+    //! FIN flag
+    bool have_sent_fin{false};
+
+    //! Retransmission timer
+    RetransmissionTimer _retransmission_timer;
+
+    //! Comparator for priority queue
     struct cmp {
         bool operator()(const std::pair<uint64_t, TCPSegment> &a, const std::pair<uint64_t, TCPSegment> &b) {
             return a.first > b.first;
         }
     };
 
+    //! Priority queue to track outstanding segments
     std::priority_queue<std::pair<uint64_t, TCPSegment>, std::vector<std::pair<uint64_t, TCPSegment>>, cmp>
         _segments_outstanding{};
 
+    //! \brief Create a segment with the given sequence number, payload, and flags
+    TCPSegment create_segment(const WrappingInt32 seqno,
+                              std::string &payload,
+                              const bool is_syn = false,
+                              const bool is_fin = false);
+
+    //! \brief Send a segment and update states
     void send_segment(TCPSegment &segment, uint64_t next_seqno, bool is_empty = false);
 
   public:
