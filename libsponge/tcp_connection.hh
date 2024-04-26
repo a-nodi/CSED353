@@ -22,15 +22,23 @@ class TCPConnection {
     bool _linger_after_streams_finish{true};
 
     size_t _time_since_last_segment_received{0};
-
-    bool _is_active{false};
+    bool is_active{true};
     bool have_sent_syn{false};
-    bool have_sent_fin{false};
     bool is_rst{false};
 
     void send_segment();
+    TCPSegment &build_header(TCPSegment &seg, bool is_last_seg);
+
     void reset_connection();
     void shutdown_connection(bool is_clean);
+
+    bool is_fully_received();
+    bool is_fully_sent();
+    bool is_fully_acknowledged();
+    bool no_recent_acknowledgement();
+    bool fully_received_but_not_fully_sent();
+
+    bool too_many_retransmissions();
 
   public:
     //! \name "Input" interface for the writer
