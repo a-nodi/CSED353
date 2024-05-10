@@ -5,6 +5,7 @@
 #include "tcp_over_ip.hh"
 #include "tun.hh"
 
+#include <map>
 #include <optional>
 #include <queue>
 
@@ -39,6 +40,30 @@ class NetworkInterface {
 
     //! outbound queue of Ethernet frames that the NetworkInterface wants sent
     std::queue<EthernetFrame> _frames_out{};
+
+    struct EthernetAndTime {
+        EthernetAddress ethernet_address;
+        size_t marked_time;
+    };
+
+    size_t accumulated_time{0};
+
+    std::map<uint32_t, EthernetAndTime> arp_table{};
+
+    std::map<uint32_t, std::queue<InternetDatagram>> temporal_data_storage{};
+
+    EthernetHeader construct_header(const EthernetAddress &source_address,
+                                    const EthernetAddress &destination_address,
+                                    const uint16_t type);
+
+    EthernetFrame construct_frame(const EthernetAddress &source_address,
+                                  const EthernetAddress &destination_address,
+                                  const uint16_t type,
+                                  const BufferList &payload);
+
+    ARPMessage construct_arp_request(const EthernetAddress &source_ethernet_address,
+                                     const uint32_t source_ip_address,
+                                     const uint32_t target_ip_address);
 
   public:
     //! \brief Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer) addresses
