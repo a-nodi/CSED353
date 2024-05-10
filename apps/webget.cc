@@ -20,7 +20,7 @@ void get_URL(const string &host, const string &path) {
         "GET " + path + " HTTP/1.1\r\n" + "HOST: " + host + "\r\n" + "Connection: close\r\n" + "\r\n";
 
     // Initialize TCP socket
-    CS144TCPSocket socket;
+    FullStackSocket socket;
     socket.connect(Address(host, "http"));
 
     socket.write(request_message);  // Write message to request
