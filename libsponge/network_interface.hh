@@ -1,6 +1,7 @@
 #ifndef SPONGE_LIBSPONGE_NETWORK_INTERFACE_HH
 #define SPONGE_LIBSPONGE_NETWORK_INTERFACE_HH
 
+#include "arp_message.hh"
 #include "ethernet_frame.hh"
 #include "tcp_over_ip.hh"
 #include "tun.hh"
@@ -61,9 +62,11 @@ class NetworkInterface {
                                   const uint16_t type,
                                   const BufferList &payload);
 
-    ARPMessage construct_arp_request(const EthernetAddress &source_ethernet_address,
+    ARPMessage construct_arp_message(const EthernetAddress &source_ethernet_address,
+                                     const EthernetAddress &target_ethernet_address,
                                      const uint32_t source_ip_address,
-                                     const uint32_t target_ip_address);
+                                     const uint32_t target_ip_address,
+                                     const uint16_t opcode);
 
   public:
     //! \brief Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer) addresses

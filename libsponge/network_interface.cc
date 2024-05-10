@@ -39,24 +39,23 @@ void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Addres
         accumulated_time - arp_table[next_hop_ip].marked_time <= ARP_SEND_COOLDOWN)
         return;  // ARP request cooldown
 
-    // Destination Ethernet address is already known && the entry is not expired
+    // Destination Ethernet address is already known && the entry is valid
     if (arp_table.find(next_hop_ip) != arp_table.end() &&
-        accumulated_time - arp_table[next_hop_ip].marked_time <= ARP_SEND_COOLDOWN) {
+        arp_table[next_hop_ip].ethernet_address != EthernetAddress()) {
         // Construct Ethernet frame (from current interface to next hop's Ethernet address, with IPv4 type, and the
         // datagram as payload)
         frame = construct_frame(
             _ethernet_address, arp_table[next_hop_ip].ethernet_address, EthernetHeader::TYPE_IPv4, dgram.serialize());
-
         _frames_out.push(frame);
     } else if (arp_table.find(next_hop_ip) == arp_table.end() ||
                (arp_table.find(next_hop_ip) != arp_table.end() &&
                 arp_table[next_hop_ip].ethernet_address == EthernetAddress() &&
                 accumulated_time - arp_table[next_hop_ip].marked_time > ARP_SEND_COOLDOWN)) {
         // Send ARP request to resolve the Ethernet address
-        arp_message = construct_arp_request(_ethernet_address, current_ip, next_hop_ip);
+        arp_message = construct_arp_message(
+            _ethernet_address, EthernetAddress(), current_ip, next_hop_ip, ARPMessage::OPCODE_REQUEST);
         frame = construct_frame(
-            _ethernet_address, ETHERNET_BROADCAST, ARPMessage::OPCODE_REQUEST, BufferList(arp_message.serialize()));
-
+            _ethernet_address, ETHERNET_BROADCAST, EthernetHeader::TYPE_ARP, BufferList(arp_message.serialize()));
         arp_table[next_hop_ip] =
             EthernetAndTime{EthernetAddress(), accumulated_time};  // Mark the entry(empty) as pending ARP request
 
@@ -65,9 +64,8 @@ void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Addres
             temporal_data_storage[next_hop_ip] = queue<InternetDatagram>();
 
         temporal_data_storage[next_hop_ip].push(dgram);
+        _frames_out.push(frame);
     }
-
-    _frames_out.push(frame);
 
     return;
 }
@@ -85,7 +83,7 @@ optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &fra
     if (frame.header().dst != _ethernet_address && frame.header().dst != ETHERNET_BROADCAST)
         return nullopt;
 
-    // Ealry termination, ignore any frame that are not IPv4 or ARP
+    // Early termination, ignore any frame that are not IPv4 or ARP
     if (frame.header().type != EthernetHeader::TYPE_IPv4 && frame.header().type != EthernetHeader::TYPE_ARP)
         return nullopt;
 
@@ -104,8 +102,13 @@ optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &fra
             return nullopt;
 
         // Save IP-Ethernet mapping from ARP reply
-        arp_table[arp_message.sender_ip_address] =
-            EthernetAndTime{arp_message.sender_ethernet_address, accumulated_time};
+        if (arp_table.find(arp_message.sender_ip_address) == arp_table.end())
+            arp_table[arp_message.sender_ip_address] =
+                EthernetAndTime{arp_message.sender_ethernet_address, accumulated_time};
+        else {
+            arp_table[arp_message.sender_ip_address].ethernet_address = arp_message.sender_ethernet_address;
+            arp_table[arp_message.sender_ip_address].marked_time = accumulated_time;
+        }
 
         // Send the temporally stored datagrams of currently received ARP reply
         if (temporal_data_storage.find(arp_message.sender_ip_address) != temporal_data_storage.end()) {
@@ -128,13 +131,17 @@ optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &fra
         }
 
         // If the ARP message is a request, send a reply
-        if (arp_message.opcode == ARPMessage::OPCODE_REQUEST) {
-            reply_message = construct_arp_request(_ethernet_address, current_ip, arp_message.sender_ip_address);
+        if (arp_message.opcode == ARPMessage::OPCODE_REQUEST && arp_message.target_ip_address == current_ip) {
+            reply_message = construct_arp_message(_ethernet_address,
+                                                  arp_message.sender_ethernet_address,
+                                                  current_ip,
+                                                  arp_message.sender_ip_address,
+                                                  ARPMessage::OPCODE_REPLY);
+
             temp_frame = construct_frame(_ethernet_address,
                                          arp_message.sender_ethernet_address,
                                          EthernetHeader::TYPE_ARP,
                                          BufferList(reply_message.serialize()));
-
             _frames_out.push(temp_frame);
         }
     }
@@ -183,13 +190,16 @@ EthernetFrame NetworkInterface::construct_frame(const EthernetAddress &source_ad
     return frame;
 }
 
-ARPMessage NetworkInterface::construct_arp_request(const EthernetAddress &source_ethernet_address,
+ARPMessage NetworkInterface::construct_arp_message(const EthernetAddress &source_ethernet_address,
+                                                   const EthernetAddress &target_ethernet_address,
                                                    const uint32_t source_ip_address,
-                                                   const uint32_t target_ip_address) {
+                                                   const uint32_t target_ip_address,
+                                                   const uint16_t opcode) {
     ARPMessage arp_message;
 
-    arp_message.opcode = ARPMessage::OPCODE_REQUEST;
+    arp_message.opcode = opcode;
     arp_message.sender_ethernet_address = source_ethernet_address;
+    arp_message.target_ethernet_address = target_ethernet_address;
     arp_message.sender_ip_address = source_ip_address;
     arp_message.target_ip_address = target_ip_address;
 
