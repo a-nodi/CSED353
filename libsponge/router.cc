@@ -48,7 +48,7 @@ void Router::route_one_datagram(InternetDatagram &dgram) {
     if (dgram.header().ttl > 0)  // Overflow prevention
         dgram.header().ttl--;    // Decrease the TTL
 
-    if (dgram.header().ttl <= 0)  // Early termination, The Drop the datagram if the TTL is less than 1
+    if (dgram.header().ttl == 0)  // Early termination, The Drop the datagram if the TTL is 0 
         return;
 
     // Search all the routing table entries
