@@ -31,7 +31,7 @@ Program Structure and Design of the Router:
     - 2. default routing: prefix and length of prefix is 0
 
     Forth, if the destination ip address and prefix matchs, perform longest prefix matching
-    fifth, if the matched prefix exists, send datagram with matched route entry.
+    Fifth, if the matched prefix exists, send datagram with matched route entry.
 
 Implementation Challenges:
     Handling default route was challenging.
@@ -43,7 +43,7 @@ Implementation Challenges:
 Remaining Bugs:
     Potential bugs that randomly occur in first make remaining. Details are in the optional part. 
 
-- Optional: I had unexpected difficulty with: 
+- Optional: I had unexpected difficulty with: [describe]
 
 - Optional: I think you could make this lab better by: [describe]
 
