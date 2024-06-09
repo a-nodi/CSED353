@@ -1,4 +1,4 @@
-CSED353 2024-Sprint Assignments
+2024-Spring CSED353 Assignments
 ===============================
 For build prereqs, see [the VM setup instructions](http://tomahawk.postech.ac.kr/csed353/assignments/vm/virtualbox).
 
