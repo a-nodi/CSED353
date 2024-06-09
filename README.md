@@ -1,5 +1,5 @@
-2024-Spring CSED353 Assignments
-===============================
+POSTECH CSED353 Computer Network (2024 Spring) Programming Assignments
+===============================================
 For build prereqs, see [the VM setup instructions](http://tomahawk.postech.ac.kr/csed353/assignments/vm/virtualbox).
 
 ## Sponge quickstart
